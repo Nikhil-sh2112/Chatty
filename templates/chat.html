@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ recipient.username }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Chat with {{ recipient.username }}</h5>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-secondary">Back</a>
+            </div>
+            <div class="card-body">
+                <div id="chat-container" class="chat-container mb-3">
+                    {% for message in messages %}
+                        <div class="message {% if message.sender_id == current_user.id %}outgoing{% else %}incoming{% endif %}" 
+                             data-message-id="{{ message.id }}">
+                            <div class="message-header">
+                                <strong>{{ message.sender.username }}</strong>
+                                <small class="message-time">{{ message.timestamp.strftime('%H:%M') }}</small>
+                            </div>
+                            <div class="message-body">
+                                {% if message.content %}
+                                    <div class="message-text">{{ message.content }}</div>
+                                {% endif %}
+                                {% if message.file_path %}
+                                    <div class="file-message">
+                                        <a href="{{ url_for('download_file', filename=message.file_name) }}" 
+                                           class="file-download" download>
+                                            <i class="bi bi-file-earmark-arrow-down"></i> {{ message.file_name }}
+                                        </a>
+                                        {% if message.content and 'convert to' in message.content.lower() %}
+                                            <span class="conversion-badge">Converted to {{ message.file_name.split('.')[-1]|upper }}</span>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <form id="chat-form" class="chat-form" enctype="multipart/form-data">
+                    <input type="hidden" id="recipient_id" value="{{ recipient.id }}">
+                    <input type="hidden" id="current_user_id" value="{{ current_user.id }}">
+                    <div class="mb-3">
+                        <textarea class="form-control" id="message-input" rows="2" 
+                                  placeholder="Type your message or 'convert to [format]'..."></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="file-controls">
+                            <input type="file" id="file-input" class="d-none" 
+                                   accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.txt">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="file-btn">
+                                <i class="bi bi-paperclip"></i> Attach File
+                            </button>
+                            <span id="file-name" class="file-name-display"></span>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="send-btn">
+                            <span class="btn-text">Send</span>
+                            <span class="spinner-border spinner-border-sm d-none" id="send-spinner"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+    // Initialize chat with existing messages
+    const chatContainer = document.getElementById('chat-container');
+    const lastMessage = document.querySelector('.message:last-child');
+    let lastMessageId = lastMessage ? parseInt(lastMessage.dataset.messageId) : 0;
+    
+    // Scroll to bottom initially
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    // File input handling
+    document.getElementById('file-btn').addEventListener('click', () => {
+        document.getElementById('file-input').click();
+    });
+    
+    document.getElementById('file-input').addEventListener('change', function() {
+        const fileNameDisplay = document.getElementById('file-name');
+        fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '';
+    });
+</script>
+{% endblock %}
+
+<style>
+    .chat-container {
+        height: 500px;
+        overflow-y: auto;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        padding: 12px 15px;
+        border-radius: 15px;
+        max-width: 75%;
+        word-wrap: break-word;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .outgoing {
+        background-color: #e3f2fd;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+    }
+    
+    .incoming {
+        background-color: #ffffff;
+        margin-right: auto;
+        border-bottom-left-radius: 5px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+    
+    .message-time {
+        color: #666;
+        font-size: 0.8em;
+    }
+    
+    .file-message {
+        padding: 8px;
+        background-color: rgba(0,0,0,0.03);
+        border-radius: 8px;
+        margin-top: 8px;
+    }
+    
+    .file-download {
+        color: #0066cc;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .conversion-badge {
+        background-color: #4CAF50;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.7em;
+        margin-left: 8px;
+    }
+    
+    #send-btn {
+        position: relative;
+        min-width: 80px;
+    }
+    
+    #send-spinner {
+        position: absolute;
+        right: 10px;
+    }
+    
+    .file-name-display {
+        margin-left: 10px;
+        color: #666;
+        font-size: 0.9em;
+        max-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    @media (max-width: 768px) {
+        .message {
+            max-width: 85%;
+        }
+    }
+</style>
+{% endblock %}

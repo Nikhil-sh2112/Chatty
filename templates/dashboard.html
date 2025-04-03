@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Contacts</h5>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                    New Chat
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for contact in contacts %}
+                    <a href="{{ url_for('chat', email=contact.email) }}" 
+                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        {{ contact.username }}
+                        <span class="badge bg-primary rounded-pill">
+                            {% set unread_count = namespace(value=0) %}
+                            {% for msg in contact.received_messages %}
+                                {% if msg.recipient_id == current_user.id and not msg.read %}
+                                    {% set unread_count.value = unread_count.value + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ unread_count.value }}
+                        </span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Welcome, {{ current_user.username }}</h5>
+            </div>
+            <div class="card-body">
+                <p>Select a conversation from the left or start a new chat.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Chat Modal -->
+<div class="modal fade" id="newChatModal" tabindex="-1" aria-labelledby="newChatModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newChatModalLabel">Start New Chat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newChatForm">
+                    <div class="mb-3">
+                        <label for="recipientEmail" class="form-label">Enter recipient's email</label>
+                        <input type="email" class="form-control" id="recipientEmail" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="startChatBtn">Start Chat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.getElementById('startChatBtn').addEventListener('click', function() {
+        const email = document.getElementById('recipientEmail').value;
+        if (email) {
+            window.location.href = `/chat/${encodeURIComponent(email)}`;
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}
